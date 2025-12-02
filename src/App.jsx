@@ -415,7 +415,7 @@ export default function App() {
           </div>
           <div>
             <h1>Smart Neighborhood</h1>
-            <span style={{ fontSize: '13px', color: '#64748b' }}>Powered by FlexMeasures</span>
+            <span style={{ fontSize: '13px', color: '#64748b' }}>Powered by DNET Labs & Co</span>
           </div>
         </div>
         <div className="live-indicator">
