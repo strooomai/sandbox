@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { LineChart, Line, AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ComposedChart, Bar, ReferenceLine } from 'recharts';
+import { LineChart, Line, AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ComposedChart, ReferenceLine } from 'recharts';
 import { Battery, Sun, Car, Thermometer, Home, Zap, TrendingDown, TrendingUp, Leaf, Euro, Activity } from 'lucide-react';
+import './App.css';
 
 // ============ MOCK DATA (Replace with FlexMeasures API calls) ============
 
@@ -11,13 +12,11 @@ const generateTimeSeriesData = () => {
     const hour = new Date(now);
     hour.setHours(i, 0, 0, 0);
     
-    // Simulate realistic patterns
     const baseLoad = 1.5 + Math.sin(i / 24 * Math.PI * 2) * 0.8;
     const solarGen = i >= 6 && i <= 20 ? Math.sin((i - 6) / 14 * Math.PI) * 4.5 : 0;
     const evCharging = i >= 22 || i <= 6 ? 3.5 + Math.random() * 1.5 : 0;
     const heatPump = i >= 5 && i <= 8 || i >= 17 && i <= 22 ? 2 + Math.random() * 1 : 0.5;
     
-    // Day-ahead prices (€/MWh -> €/kWh for display)
     const priceBase = 0.15 + Math.sin((i - 3) / 24 * Math.PI * 2) * 0.12;
     const price = Math.max(0.05, priceBase + (Math.random() - 0.5) * 0.04);
     
@@ -396,7 +395,7 @@ const PowerFlowChart = ({ data }) => (
 
 // ============ MAIN DASHBOARD ============
 
-export default function SmartNeighborhoodDashboard() {
+export default function App() {
   const [selectedHome, setSelectedHome] = useState(null);
   const [timeSeriesData, setTimeSeriesData] = useState([]);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -408,613 +407,98 @@ export default function SmartNeighborhoodDashboard() {
   }, []);
 
   return (
-    <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
-
-        * {
-          margin: 0;
-          padding: 0;
-          box-sizing: border-box;
-        }
-
-        .dashboard {
-          min-height: 100vh;
-          background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
-          color: #f1f5f9;
-          font-family: 'Space Grotesk', sans-serif;
-          padding: 24px;
-        }
-
-        .dashboard-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 24px;
-          padding-bottom: 20px;
-          border-bottom: 1px solid #334155;
-        }
-
-        .dashboard-title {
-          display: flex;
-          align-items: center;
-          gap: 16px;
-        }
-
-        .dashboard-title h1 {
-          font-size: 28px;
-          font-weight: 700;
-          background: linear-gradient(135deg, #10b981, #3b82f6);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-        }
-
-        .dashboard-title .logo {
-          width: 48px;
-          height: 48px;
-          background: linear-gradient(135deg, #10b981, #059669);
-          border-radius: 12px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
-        }
-
-        .live-indicator {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          font-family: 'JetBrains Mono', monospace;
-          font-size: 14px;
-          color: #94a3b8;
-        }
-
-        .live-dot {
-          width: 10px;
-          height: 10px;
-          background: #10b981;
-          border-radius: 50%;
-          animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.5; transform: scale(1.2); }
-        }
-
-        .stats-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-          gap: 16px;
-          margin-bottom: 24px;
-        }
-
-        .stat-card {
-          background: linear-gradient(135deg, #1e293b, #334155);
-          border-radius: 16px;
-          padding: 20px;
-          display: flex;
-          align-items: center;
-          gap: 16px;
-          border: 1px solid #334155;
-          transition: all 0.3s ease;
-        }
-
-        .stat-card:hover {
-          transform: translateY(-2px);
-          border-color: #475569;
-          box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
-        }
-
-        .stat-icon {
-          width: 48px;
-          height: 48px;
-          border-radius: 12px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .stat-content {
-          flex: 1;
-        }
-
-        .stat-label {
-          font-size: 12px;
-          color: #94a3b8;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-
-        .stat-value-row {
-          display: flex;
-          align-items: baseline;
-          gap: 4px;
-          margin-top: 4px;
-        }
-
-        .stat-value {
-          font-size: 24px;
-          font-weight: 700;
-          font-family: 'JetBrains Mono', monospace;
-        }
-
-        .stat-unit {
-          font-size: 14px;
-          color: #64748b;
-        }
-
-        .stat-trend {
-          display: flex;
-          align-items: center;
-          gap: 2px;
-          font-size: 12px;
-          margin-left: 8px;
-          padding: 2px 6px;
-          border-radius: 4px;
-        }
-
-        .stat-trend.positive {
-          color: #10b981;
-          background: #10b98122;
-        }
-
-        .stat-trend.negative {
-          color: #ef4444;
-          background: #ef444422;
-        }
-
-        .main-grid {
-          display: grid;
-          grid-template-columns: 1fr 380px;
-          gap: 24px;
-        }
-
-        .left-column {
-          display: flex;
-          flex-direction: column;
-          gap: 24px;
-        }
-
-        .right-column {
-          display: flex;
-          flex-direction: column;
-          gap: 24px;
-        }
-
-        .chart-container {
-          background: linear-gradient(135deg, #1e293b, #0f172a);
-          border-radius: 20px;
-          padding: 24px;
-          border: 1px solid #334155;
-        }
-
-        .chart-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 20px;
-        }
-
-        .chart-header h3 {
-          font-size: 16px;
-          font-weight: 600;
-          color: #f1f5f9;
-        }
-
-        .chart-legend {
-          display: flex;
-          gap: 16px;
-          font-size: 12px;
-          color: #94a3b8;
-        }
-
-        .chart-legend span {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-        }
-
-        .chart-legend i {
-          width: 12px;
-          height: 12px;
-          border-radius: 3px;
-        }
-
-        .homes-section {
-          background: linear-gradient(135deg, #1e293b, #0f172a);
-          border-radius: 20px;
-          padding: 24px;
-          border: 1px solid #334155;
-        }
-
-        .homes-section h3 {
-          font-size: 16px;
-          font-weight: 600;
-          margin-bottom: 16px;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-
-        .homes-grid {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-          max-height: 400px;
-          overflow-y: auto;
-          padding-right: 8px;
-        }
-
-        .homes-grid::-webkit-scrollbar {
-          width: 6px;
-        }
-
-        .homes-grid::-webkit-scrollbar-track {
-          background: #1e293b;
-          border-radius: 3px;
-        }
-
-        .homes-grid::-webkit-scrollbar-thumb {
-          background: #475569;
-          border-radius: 3px;
-        }
-
-        .home-card {
-          background: #1e293b;
-          border-radius: 12px;
-          padding: 16px;
-          cursor: pointer;
-          border: 2px solid transparent;
-          transition: all 0.2s ease;
-        }
-
-        .home-card:hover {
-          background: #334155;
-          border-color: #475569;
-        }
-
-        .home-card.selected {
-          border-color: var(--status-color);
-          box-shadow: 0 0 20px var(--status-color)33;
-        }
-
-        .home-header {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          margin-bottom: 12px;
-        }
-
-        .home-icon {
-          width: 36px;
-          height: 36px;
-          background: linear-gradient(135deg, #334155, #475569);
-          border-radius: 10px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: #94a3b8;
-        }
-
-        .home-info {
-          flex: 1;
-        }
-
-        .home-name {
-          font-weight: 600;
-          font-size: 14px;
-          display: block;
-        }
-
-        .home-status {
-          font-size: 11px;
-          color: var(--status-color);
-          text-transform: capitalize;
-        }
-
-        .home-power {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          font-family: 'JetBrains Mono', monospace;
-          font-size: 13px;
-          color: #10b981;
-        }
-
-        .home-assets {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-        }
-
-        .asset-badge {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          padding: 6px 10px;
-          background: #0f172a;
-          border-radius: 8px;
-          font-size: 12px;
-          font-family: 'JetBrains Mono', monospace;
-          color: var(--accent);
-          border: 1px solid var(--accent)33;
-        }
-
-        .asset-badge .asset-unit {
-          color: #64748b;
-          font-size: 10px;
-        }
-
-        .asset-status {
-          width: 6px;
-          height: 6px;
-          border-radius: 50%;
-          background: currentColor;
-          animation: pulse 1.5s infinite;
-        }
-
-        .detail-panel {
-          background: linear-gradient(135deg, #1e293b, #0f172a);
-          border-radius: 20px;
-          padding: 24px;
-          border: 1px solid #334155;
-          flex: 1;
-        }
-
-        .detail-panel.empty {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          color: #475569;
-          gap: 12px;
-        }
-
-        .detail-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 20px;
-        }
-
-        .detail-header h3 {
-          font-size: 18px;
-          font-weight: 600;
-        }
-
-        .detail-status {
-          padding: 6px 12px;
-          border-radius: 20px;
-          font-size: 12px;
-          font-weight: 500;
-          text-transform: capitalize;
-        }
-
-        .detail-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 12px;
-        }
-
-        .detail-card {
-          background: #0f172a;
-          border-radius: 12px;
-          padding: 16px;
-          border: 1px solid #334155;
-        }
-
-        .detail-card-header {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          margin-bottom: 12px;
-          font-size: 13px;
-          font-weight: 500;
-        }
-
-        .detail-card.battery .detail-card-header { color: #10b981; }
-        .detail-card.solar .detail-card-header { color: #f59e0b; }
-        .detail-card.ev .detail-card-header { color: #3b82f6; }
-        .detail-card.heatpump .detail-card-header { color: #ef4444; }
-
-        .detail-card-capacity {
-          margin-left: auto;
-          font-size: 11px;
-          color: #64748b;
-          font-family: 'JetBrains Mono', monospace;
-        }
-
-        .soc-bar {
-          height: 32px;
-          background: #1e293b;
-          border-radius: 8px;
-          position: relative;
-          overflow: hidden;
-          margin-bottom: 12px;
-        }
-
-        .soc-fill {
-          height: 100%;
-          background: linear-gradient(90deg, #10b981, #059669);
-          border-radius: 8px;
-          transition: width 0.5s ease;
-        }
-
-        .soc-bar.ev .soc-fill {
-          background: linear-gradient(90deg, #3b82f6, #2563eb);
-        }
-
-        .soc-label {
-          position: absolute;
-          right: 12px;
-          top: 50%;
-          transform: translateY(-50%);
-          font-family: 'JetBrains Mono', monospace;
-          font-size: 14px;
-          font-weight: 600;
-        }
-
-        .solar-output, .temp-display {
-          display: flex;
-          align-items: baseline;
-          gap: 4px;
-          margin-bottom: 12px;
-        }
-
-        .solar-power, .temp-value {
-          font-size: 32px;
-          font-weight: 700;
-          font-family: 'JetBrains Mono', monospace;
-        }
-
-        .solar-unit, .temp-unit {
-          font-size: 16px;
-          color: #64748b;
-        }
-
-        .detail-stat {
-          display: flex;
-          justify-content: space-between;
-          font-size: 12px;
-          color: #94a3b8;
-        }
-
-        .detail-stat .charging {
-          color: #10b981;
-        }
-
-        .detail-stat .discharging {
-          color: #f59e0b;
-        }
-
-        @media (max-width: 1200px) {
-          .main-grid {
-            grid-template-columns: 1fr;
-          }
-          
-          .right-column {
-            flex-direction: row;
-          }
-          
-          .homes-section, .detail-panel {
-            flex: 1;
-          }
-        }
-
-        @media (max-width: 768px) {
-          .dashboard {
-            padding: 16px;
-          }
-          
-          .stats-grid {
-            grid-template-columns: 1fr 1fr;
-          }
-          
-          .right-column {
-            flex-direction: column;
-          }
-          
-          .detail-grid {
-            grid-template-columns: 1fr;
-          }
-        }
-      `}</style>
-
-      <div className="dashboard">
-        <header className="dashboard-header">
-          <div className="dashboard-title">
-            <div className="logo">
-              <Zap size={28} color="white" />
-            </div>
-            <div>
-              <h1>Smart Neighborhood</h1>
-              <span style={{ fontSize: '13px', color: '#64748b' }}>Powered by FlexMeasures</span>
-            </div>
+    <div className="dashboard">
+      <header className="dashboard-header">
+        <div className="dashboard-title">
+          <div className="logo">
+            <Zap size={28} color="white" />
           </div>
-          <div className="live-indicator">
-            <div className="live-dot" />
-            <span>LIVE</span>
-            <span style={{ color: '#f1f5f9' }}>
-              {currentTime.toLocaleTimeString('en-GB')}
-            </span>
+          <div>
+            <h1>Smart Neighborhood</h1>
+            <span style={{ fontSize: '13px', color: '#64748b' }}>Powered by FlexMeasures</span>
           </div>
-        </header>
+        </div>
+        <div className="live-indicator">
+          <div className="live-dot" />
+          <span>LIVE</span>
+          <span style={{ color: '#f1f5f9' }}>
+            {currentTime.toLocaleTimeString('en-GB')}
+          </span>
+        </div>
+      </header>
 
-        <div className="stats-grid">
-          <StatCard 
-            icon={Home} 
-            label="Connected Homes" 
-            value={MOCK_STATS.totalHomes} 
-            unit="homes"
-            color="#3b82f6"
-          />
-          <StatCard 
-            icon={Euro} 
-            label="Monthly Savings" 
-            value={MOCK_STATS.totalSavings.toFixed(0)} 
-            unit="€"
-            trend={12}
-            color="#10b981"
-          />
-          <StatCard 
-            icon={Leaf} 
-            label="CO₂ Saved" 
-            value={MOCK_STATS.co2Saved} 
-            unit="tons"
-            trend={8}
-            color="#22c55e"
-          />
-          <StatCard 
-            icon={Sun} 
-            label="Solar Generation" 
-            value={MOCK_STATS.totalSolarPower} 
-            unit="kW"
-            color="#f59e0b"
-          />
-          <StatCard 
-            icon={Activity} 
-            label="Self Consumption" 
-            value={MOCK_STATS.selfConsumption} 
-            unit="%"
-            trend={5}
-            color="#8b5cf6"
-          />
-          <StatCard 
-            icon={Zap} 
-            label="Grid Export" 
-            value={Math.abs(MOCK_STATS.currentGridPower)} 
-            unit="kW"
-            color="#06b6d4"
-          />
+      <div className="stats-grid">
+        <StatCard 
+          icon={Home} 
+          label="Connected Homes" 
+          value={MOCK_STATS.totalHomes} 
+          unit="homes"
+          color="#3b82f6"
+        />
+        <StatCard 
+          icon={Euro} 
+          label="Monthly Savings" 
+          value={MOCK_STATS.totalSavings.toFixed(0)} 
+          unit="€"
+          trend={12}
+          color="#10b981"
+        />
+        <StatCard 
+          icon={Leaf} 
+          label="CO₂ Saved" 
+          value={MOCK_STATS.co2Saved} 
+          unit="tons"
+          trend={8}
+          color="#22c55e"
+        />
+        <StatCard 
+          icon={Sun} 
+          label="Solar Generation" 
+          value={MOCK_STATS.totalSolarPower} 
+          unit="kW"
+          color="#f59e0b"
+        />
+        <StatCard 
+          icon={Activity} 
+          label="Self Consumption" 
+          value={MOCK_STATS.selfConsumption} 
+          unit="%"
+          trend={5}
+          color="#8b5cf6"
+        />
+        <StatCard 
+          icon={Zap} 
+          label="Grid Export" 
+          value={Math.abs(MOCK_STATS.currentGridPower)} 
+          unit="kW"
+          color="#06b6d4"
+        />
+      </div>
+
+      <div className="main-grid">
+        <div className="left-column">
+          <PriceScheduleChart data={timeSeriesData} />
+          <PowerFlowChart data={timeSeriesData} />
         </div>
 
-        <div className="main-grid">
-          <div className="left-column">
-            <PriceScheduleChart data={timeSeriesData} />
-            <PowerFlowChart data={timeSeriesData} />
-          </div>
-
-          <div className="right-column">
-            <div className="homes-section">
-              <h3><Home size={18} /> Homes</h3>
-              <div className="homes-grid">
-                {MOCK_HOMES.map(home => (
-                  <HomeCard 
-                    key={home.id}
-                    home={home}
-                    isSelected={selectedHome?.id === home.id}
-                    onClick={() => setSelectedHome(home)}
-                  />
-                ))}
-              </div>
+        <div className="right-column">
+          <div className="homes-section">
+            <h3><Home size={18} /> Homes</h3>
+            <div className="homes-grid">
+              {MOCK_HOMES.map(home => (
+                <HomeCard 
+                  key={home.id}
+                  home={home}
+                  isSelected={selectedHome?.id === home.id}
+                  onClick={() => setSelectedHome(home)}
+                />
+              ))}
             </div>
-
-            <DetailPanel home={selectedHome} />
           </div>
+
+          <DetailPanel home={selectedHome} />
         </div>
       </div>
-    </>
+    </div>
   );
 }
